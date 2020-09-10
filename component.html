@@ -1,0 +1,206 @@
+<!--Add this in Customize - Themes - Components - <head> -->
+<!-- don't forget to change 'sitekey' to actual sitekey -->
+ 
+ <script src="https://www.google.com/recaptcha/api.js?render=explicit&hl=en" async defer ></script>
+ 
+<script type="text/x-handlebars" data-template-name="modal/create-account">
+{{#create-account email=accountEmail disabled=submitDisabled }}
+  {{#unless complete}}
+    {{plugin-outlet name="create-account-before-modal-body"}}
+    {{#d-modal-body title="create_account.title" class=(concat (if hasAtLeastOneLoginButton "has-alt-auth") " " (if userFields "has-user-fields"))}}
+
+      {{#unless hasAuthOptions}}
+        {{login-buttons externalLogin=(action "externalLogin")}}
+      {{/unless}}
+
+      {{#if showCreateForm}}
+        <div class="login-form">
+          <form id="no-enter-form" {{action "" on="submit" }}>
+          <table>
+
+          <tr class="input create-account-email">
+                <td class="label"><label for='new-account-email'>{{i18n 'user.email.title'}}</label></td>
+                <td>
+                {{input type="email" value=accountEmail id="new-account-email" disabled=emailValidated name="email" autofocus="autofocus"}}
+                </td>
+          </tr>
+
+          <tr class="instructions create-account-email">
+            <td></td>
+                {{input-tip validation=emailValidation id="account-email-validation"}}
+                <td><label>{{i18n 'user.email.instructions'}}</label></td>
+          </tr>
+
+          {{#if usernameRequired}}
+            <tr class="input">
+                  <td class="label"><label for='new-account-username'>{{i18n 'user.username.title'}}</label></td>
+                  <td>
+                  {{input value=accountUsername id="new-account-username" name="username" maxlength=maxUsernameLength autocomplete="discourse"}}
+                  </td>
+            </tr>
+            <tr class="instructions">
+              <td></td>
+              {{input-tip validation=usernameValidation id="username-validation"}}
+              <td><label>{{i18n 'user.username.instructions'}}</label></td>
+            </tr>
+          {{/if}}
+
+          {{#if fullnameRequired}}
+            <tr class="input">
+              <td class="label">
+                <label for='new-account-name'>{{i18n 'user.name.title'}}</label>
+              </td>
+              <td>
+                {{text-field value=accountName id="new-account-name"}}
+              </td>
+            </tr>
+            <tr class="instructions">
+              <td></td>
+              {{input-tip validation=nameValidation}}
+              <td><label>{{nameInstructions}}</label></td>
+            </tr>
+          {{/if}}
+          
+
+          {{plugin-outlet name="create-account-before-password"
+                          noTags=true
+                          args=(hash accountName=accountName
+                                     accountUsername=accountUsername
+                                     accountPassword=accountPassword
+                                     userFields=userFields)}}
+
+          {{#if passwordRequired}}
+            <tr class="input">
+                <td class="label"><label for='new-account-password'>{{i18n 'user.password.title'}}</label></td>
+                <td>
+                {{password-field value=accountPassword type="password" id="new-account-password" capsLockOn=capsLockOn}}
+                </td>
+            </tr>
+            <tr class="instructions">
+              <td></td>
+              {{input-tip validation=passwordValidation}}
+              <td>
+                <label>{{passwordInstructions}}</label>
+                <div class="caps-lock-warning {{unless capsLockOn 'hidden'}}">
+                  {{d-icon "exclamation-triangle"}} {{i18n 'login.caps_lock_warning'}}</div>
+              </td>
+            </tr>
+          {{/if}}
+        
+
+          {{plugin-outlet name="create-account-after-password"
+                          noTags=true
+                          args=(hash accountName=accountName
+                                     accountUsername=accountUsername
+                                     accountPassword=accountPassword
+                                     userFields=userFields)}}
+         <tr>
+            <td>
+                <div class="g-recaptcha" id="recaptcha" data-sitekey="sitekey"></div>    
+                <input type="hidden" value="" id="gr-ver" />
+            </td>
+        </tr>
+          </table>
+
+          {{#if userFields}}
+            <div class='user-fields'>
+              {{#each userFields as |f|}}
+                {{user-field field=f.field value=f.value}}
+              {{/each}}
+            </div>
+          {{/if}}
+
+          </form>
+        </div>
+      {{/if}}
+
+    {{/d-modal-body}}
+
+    {{#if showCreateForm}}
+      <div class="modal-footer">
+        <button class='btn btn-large btn-primary' id="btn-sign-up" disabled={{submitDisabled}} {{action "createAccount"}}>{{i18n 'create_account.title'}}</button>
+
+        {{#conditional-loading-spinner condition=formSubmitted size="small"}}
+          {{#d-button class="btn btn-large" id="login-link" action=(route-action "showLogin")}}
+            {{i18n "log_in"}}
+          {{/d-button}}
+        {{/conditional-loading-spinner}}
+
+      <div class='disclaimer'>{{{disclaimerHtml}}}</div>
+      </div>
+    {{/if}}
+  {{/unless}}
+{{/create-account}}
+</script>
+<script type="text/javascript">
+$(document).ready(function() {
+    $('.sign-up-button').click(function() {
+        _captchaTries = 0; 
+        
+        recaptchaOnLoad(); 
+    });  
+    
+});
+
+function signUpClick() {
+            var grecaptchaResponse = grecaptcha.getResponse();
+            var btn = $('#btn-sign-up');
+            btn.prop('disabled', true);
+            $.ajax({
+        		  	url: '/grverify',
+        		  	type: 'POST',
+        		  	dataType: 'json',
+        		  	data: {
+        		  	    recaptcha_response: grecaptchaResponse
+        		  	},
+        		  	success: function (res) {
+        		  		console.log(res);
+                        var enabled = btn.prop('disabled');
+                        var verified = res.verify;
+                        if (enabled && verified) {
+                            btn.prop('disabled', false);
+                            $('#gr-ver').val('yes');
+                        }
+        		  	},
+        		  	error: function (jqXHR, exception) {
+        		  		console.log('failure'); console.log(jqXHR); console.log(exception);
+        		  		btn.prop('disabled', true);
+        		  	}
+        	    });
+        //});
+}
+
+
+function recaptchaOnLoad() {
+    _captchaTries++;
+    if(_captchaTries > 9)
+        return;
+    if ($('.ember-text-field').length > 1) {
+        $('#no-enter-form').on('keyup keypress', function(e) {
+            var keyCode = e.keyCode || e.which;
+            if (keyCode === 13) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        $('.ember-text-field').change(function(){
+        		$('#btn-sign-up').prop('disabled', true);
+        		if ( $('.tip.good').length == 4 && $('#gr-ver').val == 'yes') {
+        			$('#btn-sign-up').prop('disabled', false);
+        		}
+        });
+    }        
+    if ( $('.g-recaptcha').length > 0 ) {
+        grecaptcha.render("recaptcha", {
+            sitekey: "sitekey",
+             callback: function() {
+                 console.log('rec callback');
+                 signUpClick();
+              }
+         });
+     return;
+    }
+    window.setTimeout(recaptchaOnLoad, 1000);
+}
+
+</script>

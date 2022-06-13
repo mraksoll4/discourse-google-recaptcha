@@ -1,7 +1,7 @@
 <!--Add this in Customize - Themes - Components - <head> -->
 <!-- don't forget to change 'sitekey' to actual sitekey -->
- 
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<!DOCTYPE html> 
+ <script src="https://www.google.com/recaptcha/api.js" async defer ></script>
  
 <script type="text/x-handlebars" data-template-name="modal/create-account">
 {{#create-account email=accountEmail disabled=submitDisabled action=(action "createAccount")}}
@@ -152,8 +152,12 @@
                   userFields=userFields
                 )
               }}
-            <div class="g-recaptcha" id="recaptcha" data-sitekey="6Lei_GUgAAAAAAe_2UFXmDsyoo5HJzILCHEQgc0j"></div>    
+         <tr>
+            <td>
+            <div class="g-recaptcha" id="recaptcha" data-sitekey="6LdQTWYgAAAAADzU6B3w5fBNAultAxGNETWR4JA9"></div>    
             <input type="hidden" value="" id="gr-ver" />
+            </td>
+        </tr>
               {{#if userFields}}
                 <div class="user-fields">
                   {{#each userFields as |f|}}
